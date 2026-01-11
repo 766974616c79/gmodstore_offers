@@ -1,12 +1,7 @@
 use headless_chrome::Browser;
 use reqwest::blocking::Client;
 use serde::Serialize;
-use std::{
-    error::Error,
-    fs::{read_to_string, write},
-    thread::sleep,
-    time::Duration,
-};
+use std::{error::Error, fs, thread::sleep, time::Duration};
 
 const PATH: &str = "./old.txt";
 const WEBHOOK: &str = "WEBHOOK";
@@ -17,6 +12,10 @@ struct Body {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    if !fs::exists(PATH)? {
+        fs::write(PATH, "")?;
+    }
+
     loop {
         let browser = Browser::default()?;
         let tab = browser.new_tab()?;
@@ -26,7 +25,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             tab.wait_for_xpath("/html/body/div[1]/main/div/div[2]/div[2]/div/div[3]/div[1]/div/a")?;
 
         let url = url_element.get_attribute_value("href")?.unwrap();
-        let old_url = read_to_string(PATH)?;
+        let old_url = fs::read_to_string(PATH)?;
         if old_url != url {
             let name_element = tab.wait_for_xpath(
                 "/html/body/div[1]/main/div/div[2]/div[2]/div/div[3]/div[1]/div/div[1]",
@@ -40,7 +39,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 })
                 .send()?;
 
-            write(PATH, url)?;
+            fs::write(PATH, url)?;
         }
 
         sleep(Duration::from_secs(60));
